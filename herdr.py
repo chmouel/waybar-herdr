@@ -10,10 +10,10 @@ import sys
 from collections import Counter
 
 STATUS_MAP = {
-    "working": ("󰑮", "#50fa7b"),
-    "blocked": ("󰏤", "#ffb86c"),
-    "idle": ("󰒲", "#bd93f9"),
-    "done": ("󰄬", "#8be9fd"),
+    "working": ("W", "#50fa7b"),
+    "blocked": ("B", "#ffb86c"),
+    "idle": ("I", "#bd93f9"),
+    "done": ("D", "#8be9fd"),
     "unknown": ("?", "#6272a4"),
 }
 
@@ -35,7 +35,12 @@ def get_agents():
         )
         data = json.loads(result.stdout)
         return data.get("result", {}).get("agents", [])
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, json.JSONDecodeError, FileNotFoundError):
+    except (
+        subprocess.CalledProcessError,
+        subprocess.TimeoutExpired,
+        json.JSONDecodeError,
+        FileNotFoundError,
+    ):
         return []
 
 
@@ -50,8 +55,12 @@ def pick_agent(agents):
 
 def focus_agent(pane_id):
     subprocess.run(["wm-jumpapp", TERMINAL], check=False)
-    subprocess.run(["herdr", "agent", "focus", pane_id],
-                    capture_output=True, timeout=2, check=False)
+    subprocess.run(
+        ["herdr", "agent", "focus", pane_id],
+        capture_output=True,
+        timeout=2,
+        check=False,
+    )
 
 
 def handle_focus():
@@ -118,8 +127,13 @@ def main():
         c = counts.get(state, 0)
         if c > 0:
             icon = STATUS_MAP.get(state, ("?", "#6272a4"))[0]
-            parts.append(f"{icon}{c}")
-    text = "󰚩 " + " ".join(parts)
+            color = STATUS_MAP.get(state, ("?", "#6272a4"))[1]
+            parts.append(f"<span foreground='{color}'>{icon}{c}</span>")
+    text = (
+        "<span foreground='white'>[</span>"
+        + "|".join(parts)
+        + "<span foreground='white'>]</span>"
+    )
 
     css_class = "unknown"
     for state in STATE_PRIORITY:
