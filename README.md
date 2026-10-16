@@ -35,7 +35,7 @@ cp herdr.py ~/.local/share/waybar-herdr/herdr.py
 chmod +x ~/.local/share/waybar-herdr/herdr.py
 ```
 
-Add the module to your Waybar `modules.jsonc` (or inline in your config):
+Add the module to your Waybar config (or a shared `modules.jsonc`):
 
 ```jsonc
 "custom/herdr": {
@@ -45,7 +45,7 @@ Add the module to your Waybar `modules.jsonc` (or inline in your config):
   "exec": "~/.local/share/waybar-herdr/herdr.py",
   "exec-if": "herdr status --json 2>/dev/null | jq -e '.server.running == true' >/dev/null 2>&1",
   "on-click": "~/.local/share/waybar-herdr/herdr.py focus",
-  "on-click-right": "~/.local/share/waybar-herdr/herdr.py jumpapp",
+  "on-click-right": "~/.local/share/waybar-herdr/herdr.py menu",
 },
 ```
 
@@ -74,13 +74,30 @@ killall -SIGUSR2 waybar
 
 ## Click actions
 
-Left-click runs `wm-jump --all` (a fuzzy window picker that shows Herdr tabs). Right-click runs `wm-jumpapp kitty` to focus the terminal. Change these in the module config or edit the script to suit your setup.
+Left-click focuses the most urgent agent. Blocked agents get priority (they need your attention), then working, then idle. The script calls `wm-jumpapp` to raise the terminal window and `herdr agent focus` to switch to the agent's pane.
+
+Right-click opens a fuzzel menu listing all agents. Pick one to focus it.
+
+## Configuration
+
+Set `HERDR_TERMINAL` to change which terminal app gets focused (defaults to `kitty`). You can set this in the waybar module config:
+
+```jsonc
+"custom/herdr": {
+  "env": { "HERDR_TERMINAL": "ghostty" },
+  ...
+},
+```
+
+The script uses [wm-jumpapp](https://github.com/chmouel/chmouzies) to focus windows, which works with Sway, Hyprland, and Niri.
 
 ## Requirements
 
 - [Herdr](https://herdr.dev) with at least one agent integration installed (`herdr integration status`)
 - Python 3
 - `jq` (for `exec-if`)
+- [wm-jumpapp](https://github.com/chmouel/chmouzies) (for click-to-focus)
+- [fuzzel](https://codeberg.org/dnkl/fuzzel) (for the right-click menu)
 - A Nerd Font in your Waybar config
 
 ## License

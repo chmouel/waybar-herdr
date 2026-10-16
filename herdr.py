@@ -21,24 +21,10 @@ STATE_PRIORITY = ["blocked", "working", "idle", "done", "unknown"]
 
 DISPLAY_ORDER = ["working", "blocked", "idle", "done", "unknown"]
 
-
-def handle_focus():
-    subprocess.run(["wm-jump", "--all"], check=False)
-    sys.exit(0)
+TERMINAL = os.environ.get("HERDR_TERMINAL", "kitty")
 
 
-def handle_jumpapp():
-    subprocess.run(["wm-jumpapp", "kitty"], check=False)
-    sys.exit(0)
-
-
-def main():
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "focus":
-            handle_focus()
-        elif sys.argv[1] == "jumpapp":
-            handle_jumpapp()
-
+def get_agents():
     try:
         result = subprocess.run(
             ["herdr", "agent", "list"],
@@ -48,10 +34,80 @@ def main():
             check=True,
         )
         data = json.loads(result.stdout)
-        agents = data.get("result", {}).get("agents", [])
+        return data.get("result", {}).get("agents", [])
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired, json.JSONDecodeError, FileNotFoundError):
-        return
+        return []
 
+
+def pick_agent(agents):
+    """Pick the most urgent agent: first blocked, then working, then by priority."""
+    for state in STATE_PRIORITY:
+        for a in agents:
+            if a.get("agent_status") == state:
+                return a
+    return agents[0] if agents else None
+
+
+def focus_agent(pane_id):
+    subprocess.run(["wm-jumpapp", TERMINAL], check=False)
+    subprocess.run(["herdr", "agent", "focus", pane_id],
+                    capture_output=True, timeout=2, check=False)
+
+
+def handle_focus():
+    agents = get_agents()
+    if not agents:
+        sys.exit(0)
+    agent = pick_agent(agents)
+    if agent:
+        focus_agent(agent["pane_id"])
+    sys.exit(0)
+
+
+def handle_menu():
+    agents = get_agents()
+    if not agents:
+        sys.exit(0)
+
+    lines = []
+    pane_ids = []
+    for a in agents:
+        status = a.get("agent_status", "unknown")
+        icon = STATUS_MAP.get(status, ("?", "#6272a4"))[0]
+        agent_type = a.get("agent", "?")
+        project = os.path.basename(a.get("cwd", ""))
+        title = a.get("terminal_title_stripped", "")
+        label = f"{icon} {agent_type:<8s} {status:<8s} {project}"
+        if title:
+            label += f"  {title}"
+        lines.append(label)
+        pane_ids.append(a.get("pane_id", ""))
+
+    try:
+        result = subprocess.run(
+            ["fuzzel", "-d", "--index", "--prompt", "Agent > "],
+            input="\n".join(lines),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            idx = int(result.stdout.strip())
+            if 0 <= idx < len(pane_ids) and pane_ids[idx]:
+                focus_agent(pane_ids[idx])
+    except (ValueError, subprocess.TimeoutExpired):
+        pass
+    sys.exit(0)
+
+
+def main():
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "focus":
+            handle_focus()
+        elif sys.argv[1] == "menu":
+            handle_menu()
+
+    agents = get_agents()
     if not agents:
         return
 
