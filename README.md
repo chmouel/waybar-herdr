@@ -80,11 +80,17 @@ Right-click opens a fuzzel menu listing all agents. Pick one to focus it.
 
 ## Configuration
 
-Set `HERDR_TERMINAL` to change which terminal app gets focused (defaults to `kitty`). You can set this in the waybar module config:
+| Variable | Default | Values |
+|----------|---------|--------|
+| `HERDR_ICONS` | `nerd` | `nerd` (Nerd Font glyphs) or `text` (plain letters W/B/I/D) |
+| `HERDR_BRACKETS` | `0` | `1` to wrap output in `[W1|I2|D2]` brackets |
+| `HERDR_TERMINAL` | `kitty` | Terminal app to focus on click |
+
+Set these in the waybar module config:
 
 ```jsonc
 "custom/herdr": {
-  "env": { "HERDR_TERMINAL": "ghostty" },
+  "env": { "HERDR_ICONS": "text", "HERDR_TERMINAL": "ghostty" },
   ...
 },
 ```

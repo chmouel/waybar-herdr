@@ -100,13 +100,16 @@ class TestPickAgent(unittest.TestCase):
 
 
 class TestMainOutput(unittest.TestCase):
-    def run_main(self, agents_response):
-        with mock_agent_list(agents_response):
-            with patch("builtins.print") as mock_print:
-                herdr.main()
-                if mock_print.called:
-                    return json.loads(mock_print.call_args[0][0])
-                return None
+    def run_main(self, agents_response, icon_mode="text", brackets="0"):
+        with patch.dict(os.environ, {"HERDR_ICONS": icon_mode, "HERDR_BRACKETS": brackets}):
+            import importlib
+            importlib.reload(herdr)
+            with mock_agent_list(agents_response):
+                with patch("builtins.print") as mock_print:
+                    herdr.main()
+                    if mock_print.called:
+                        return json.loads(mock_print.call_args[0][0])
+                    return None
 
     def test_output_format(self):
         output = self.run_main(SAMPLE_AGENTS)
@@ -114,18 +117,34 @@ class TestMainOutput(unittest.TestCase):
         self.assertIn("tooltip", output)
         self.assertIn("class", output)
 
-    def test_text_has_colored_spans(self):
-        output = self.run_main(SAMPLE_AGENTS)
+    def test_text_mode(self):
+        output = self.run_main(SAMPLE_AGENTS, "text")
         self.assertIn("<span foreground=", output["text"])
         self.assertIn("W1", output["text"])
         self.assertIn("B1", output["text"])
         self.assertIn("I1", output["text"])
 
-    def test_bracket_pipe_format(self):
-        output = self.run_main(SAMPLE_AGENTS)
+    def test_nerd_mode(self):
+        output = self.run_main(SAMPLE_AGENTS, "nerd")
+        self.assertIn("<span foreground=", output["text"])
+        self.assertIn("󰑮1", output["text"])
+        self.assertIn("󰏤1", output["text"])
+        self.assertIn("󰒲1", output["text"])
+
+    def test_invalid_mode_falls_back_to_nerd(self):
+        output = self.run_main(SAMPLE_AGENTS, "bogus")
+        self.assertIn("󰑮1", output["text"])
+
+    def test_brackets_enabled(self):
+        output = self.run_main(SAMPLE_AGENTS, brackets="1")
         self.assertIn("[", output["text"])
         self.assertIn("]", output["text"])
         self.assertIn("|", output["text"])
+
+    def test_no_brackets_by_default(self):
+        output = self.run_main(SAMPLE_AGENTS)
+        self.assertNotIn("[", output["text"])
+        self.assertNotIn("]", output["text"])
 
     def test_css_class_blocked_priority(self):
         output = self.run_main(SAMPLE_AGENTS)
@@ -168,7 +187,7 @@ class TestMainOutput(unittest.TestCase):
                 "type": "agent_list",
             }
         }
-        output = self.run_main(data)
+        output = self.run_main(data, "text")
         self.assertIn("I1", output["text"])
         self.assertNotIn("W", output["text"])
         self.assertNotIn("B", output["text"])

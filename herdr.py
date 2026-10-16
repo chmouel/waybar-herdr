@@ -9,13 +9,26 @@ import subprocess
 import sys
 from collections import Counter
 
-STATUS_MAP = {
-    "working": ("W", "#50fa7b"),
-    "blocked": ("B", "#ffb86c"),
-    "idle": ("I", "#bd93f9"),
-    "done": ("D", "#8be9fd"),
-    "unknown": ("?", "#6272a4"),
+ICON_SETS = {
+    "nerd": {
+        "working": ("󰑮", "#50fa7b"),
+        "blocked": ("󰏤", "#ffb86c"),
+        "idle": ("󰒲", "#bd93f9"),
+        "done": ("󰄬", "#8be9fd"),
+        "unknown": ("", "#6272a4"),
+    },
+    "text": {
+        "working": ("W", "#50fa7b"),
+        "blocked": ("B", "#ffb86c"),
+        "idle": ("I", "#bd93f9"),
+        "done": ("D", "#8be9fd"),
+        "unknown": ("?", "#6272a4"),
+    },
 }
+
+ICON_MODE = os.environ.get("HERDR_ICONS", "nerd")
+STATUS_MAP = ICON_SETS.get(ICON_MODE, ICON_SETS["nerd"])
+BRACKETS = os.environ.get("HERDR_BRACKETS", "0") == "1"
 
 STATE_PRIORITY = ["blocked", "working", "idle", "done", "unknown"]
 
@@ -129,11 +142,14 @@ def main():
             icon = STATUS_MAP.get(state, ("?", "#6272a4"))[0]
             color = STATUS_MAP.get(state, ("?", "#6272a4"))[1]
             parts.append(f"<span foreground='{color}'>{icon}{c}</span>")
-    text = (
-        "<span foreground='white'>[</span>"
-        + "|".join(parts)
-        + "<span foreground='white'>]</span>"
-    )
+    if BRACKETS:
+        text = (
+            "<span foreground='white'>[</span>"
+            + "|".join(parts)
+            + "<span foreground='white'>]</span>"
+        )
+    else:
+        text = " ".join(parts)
 
     css_class = "unknown"
     for state in STATE_PRIORITY:
