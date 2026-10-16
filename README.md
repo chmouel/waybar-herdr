@@ -8,19 +8,19 @@ Herdr tracks AI coding agents (Claude, Pi, Codex, Copilot, etc.) running in term
 
 ## What it shows
 
-The bar text shows an icon per state with a count, only for states that have agents in them:
+The bar text shows a bracketed summary with per-state colors via Pango markup, only for states that have agents in them:
 
 ```
-󰚩 󰑮3 󰏤1 󰒲2
+[W1|I2|D2]
 ```
 
-| State | Icon | Color |
-|-------|------|-------|
-| working | 󰑮 | green |
-| blocked | 󰏤 | orange |
-| idle | 󰒲 | purple |
-| done | 󰄬 | cyan |
-| unknown | ? | grey |
+| Label | State | Color |
+|-------|-------|-------|
+| W | working | green |
+| B | blocked | orange |
+| I | idle | purple |
+| D | done | cyan |
+| ? | unknown | grey |
 
 Hovering shows a tooltip listing each agent with its type, status, project directory, and terminal title.
 
